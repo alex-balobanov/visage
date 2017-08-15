@@ -1,0 +1,405 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F0B915692C47AE941B55B430 /* libPods-visage.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C5C835DB7626445145E593D /* libPods-visage.a */; };
+		FAEBBA431F42FA2200389201 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = FAEBBA421F42FA2200389201 /* main.m */; };
+		FAEBBA461F42FA2200389201 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = FAEBBA451F42FA2200389201 /* AppDelegate.m */; };
+		FAEBBA491F42FA2200389201 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = FAEBBA481F42FA2200389201 /* ViewController.m */; };
+		FAEBBA4C1F42FA2200389201 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA4A1F42FA2200389201 /* Main.storyboard */; };
+		FAEBBA4E1F42FA2200389201 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA4D1F42FA2200389201 /* Assets.xcassets */; };
+		FAEBBA511F42FA2200389201 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA4F1F42FA2200389201 /* LaunchScreen.storyboard */; };
+		FAEBBA5A1F431FFD00389201 /* VisageFilter.m in Sources */ = {isa = PBXBuildFile; fileRef = FAEBBA591F431FFD00389201 /* VisageFilter.m */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		243F28ABD0C312CDE5A569D0 /* Pods-visage.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-visage.debug.xcconfig"; path = "Pods/Target Support Files/Pods-visage/Pods-visage.debug.xcconfig"; sourceTree = "<group>"; };
+		78B0B21E5F3B4EBFDCC56628 /* Pods-visage.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-visage.release.xcconfig"; path = "Pods/Target Support Files/Pods-visage/Pods-visage.release.xcconfig"; sourceTree = "<group>"; };
+		8C5C835DB7626445145E593D /* libPods-visage.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-visage.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		FAEBBA3E1F42FA2200389201 /* visage.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = visage.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		FAEBBA421F42FA2200389201 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
+		FAEBBA441F42FA2200389201 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
+		FAEBBA451F42FA2200389201 /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
+		FAEBBA471F42FA2200389201 /* ViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ViewController.h; sourceTree = "<group>"; };
+		FAEBBA481F42FA2200389201 /* ViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ViewController.m; sourceTree = "<group>"; };
+		FAEBBA4B1F42FA2200389201 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		FAEBBA4D1F42FA2200389201 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		FAEBBA501F42FA2200389201 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		FAEBBA521F42FA2200389201 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		FAEBBA581F431FFD00389201 /* VisageFilter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VisageFilter.h; sourceTree = "<group>"; };
+		FAEBBA591F431FFD00389201 /* VisageFilter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = VisageFilter.m; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		FAEBBA3B1F42FA2200389201 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F0B915692C47AE941B55B430 /* libPods-visage.a in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		0D8C7D41BB2B9019D4D69C6B /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				243F28ABD0C312CDE5A569D0 /* Pods-visage.debug.xcconfig */,
+				78B0B21E5F3B4EBFDCC56628 /* Pods-visage.release.xcconfig */,
+			);
+			name = Pods;
+			sourceTree = "<group>";
+		};
+		B2A52FC2D8EFC0AED552CEC3 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				8C5C835DB7626445145E593D /* libPods-visage.a */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		FAEBBA351F42FA2200389201 = {
+			isa = PBXGroup;
+			children = (
+				FAEBBA401F42FA2200389201 /* visage */,
+				FAEBBA3F1F42FA2200389201 /* Products */,
+				0D8C7D41BB2B9019D4D69C6B /* Pods */,
+				B2A52FC2D8EFC0AED552CEC3 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		FAEBBA3F1F42FA2200389201 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				FAEBBA3E1F42FA2200389201 /* visage.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		FAEBBA401F42FA2200389201 /* visage */ = {
+			isa = PBXGroup;
+			children = (
+				FAEBBA581F431FFD00389201 /* VisageFilter.h */,
+				FAEBBA591F431FFD00389201 /* VisageFilter.m */,
+				FAEBBA441F42FA2200389201 /* AppDelegate.h */,
+				FAEBBA451F42FA2200389201 /* AppDelegate.m */,
+				FAEBBA471F42FA2200389201 /* ViewController.h */,
+				FAEBBA481F42FA2200389201 /* ViewController.m */,
+				FAEBBA4A1F42FA2200389201 /* Main.storyboard */,
+				FAEBBA4D1F42FA2200389201 /* Assets.xcassets */,
+				FAEBBA4F1F42FA2200389201 /* LaunchScreen.storyboard */,
+				FAEBBA521F42FA2200389201 /* Info.plist */,
+				FAEBBA411F42FA2200389201 /* Supporting Files */,
+			);
+			path = visage;
+			sourceTree = "<group>";
+		};
+		FAEBBA411F42FA2200389201 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				FAEBBA421F42FA2200389201 /* main.m */,
+			);
+			name = "Supporting Files";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		FAEBBA3D1F42FA2200389201 /* visage */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FAEBBA551F42FA2200389201 /* Build configuration list for PBXNativeTarget "visage" */;
+			buildPhases = (
+				7E64B2B7DEAC5F8C1553625A /* [CP] Check Pods Manifest.lock */,
+				FAEBBA3A1F42FA2200389201 /* Sources */,
+				FAEBBA3B1F42FA2200389201 /* Frameworks */,
+				FAEBBA3C1F42FA2200389201 /* Resources */,
+				8175F9D960AB2CEACDCA9C8D /* [CP] Embed Pods Frameworks */,
+				2292137A31BDF65576F93F72 /* [CP] Copy Pods Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = visage;
+			productName = visage;
+			productReference = FAEBBA3E1F42FA2200389201 /* visage.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		FAEBBA361F42FA2200389201 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 0830;
+				ORGANIZATIONNAME = "ITlekt Corporation";
+				TargetAttributes = {
+					FAEBBA3D1F42FA2200389201 = {
+						CreatedOnToolsVersion = 8.3.3;
+						DevelopmentTeam = 792KQRWJ8M;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = FAEBBA391F42FA2200389201 /* Build configuration list for PBXProject "visage" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = FAEBBA351F42FA2200389201;
+			productRefGroup = FAEBBA3F1F42FA2200389201 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				FAEBBA3D1F42FA2200389201 /* visage */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		FAEBBA3C1F42FA2200389201 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FAEBBA511F42FA2200389201 /* LaunchScreen.storyboard in Resources */,
+				FAEBBA4E1F42FA2200389201 /* Assets.xcassets in Resources */,
+				FAEBBA4C1F42FA2200389201 /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		2292137A31BDF65576F93F72 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-visage/Pods-visage-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		7E64B2B7DEAC5F8C1553625A /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_ROOT}/../Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+		8175F9D960AB2CEACDCA9C8D /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-visage/Pods-visage-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		FAEBBA3A1F42FA2200389201 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FAEBBA491F42FA2200389201 /* ViewController.m in Sources */,
+				FAEBBA461F42FA2200389201 /* AppDelegate.m in Sources */,
+				FAEBBA5A1F431FFD00389201 /* VisageFilter.m in Sources */,
+				FAEBBA431F42FA2200389201 /* main.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		FAEBBA4A1F42FA2200389201 /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				FAEBBA4B1F42FA2200389201 /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		FAEBBA4F1F42FA2200389201 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				FAEBBA501F42FA2200389201 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		FAEBBA531F42FA2200389201 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		FAEBBA541F42FA2200389201 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 10.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		FAEBBA561F42FA2200389201 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 243F28ABD0C312CDE5A569D0 /* Pods-visage.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = 792KQRWJ8M;
+				INFOPLIST_FILE = visage/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.itlekt.fyyff;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		FAEBBA571F42FA2200389201 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 78B0B21E5F3B4EBFDCC56628 /* Pods-visage.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				DEVELOPMENT_TEAM = 792KQRWJ8M;
+				INFOPLIST_FILE = visage/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				PRODUCT_BUNDLE_IDENTIFIER = com.itlekt.fyyff;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		FAEBBA391F42FA2200389201 /* Build configuration list for PBXProject "visage" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FAEBBA531F42FA2200389201 /* Debug */,
+				FAEBBA541F42FA2200389201 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FAEBBA551F42FA2200389201 /* Build configuration list for PBXNativeTarget "visage" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FAEBBA561F42FA2200389201 /* Debug */,
+				FAEBBA571F42FA2200389201 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = FAEBBA361F42FA2200389201 /* Project object */;
+}
