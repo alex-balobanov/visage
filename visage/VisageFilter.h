@@ -18,6 +18,9 @@ extern "C" {
 }
 #endif /* defined(__cplusplus) */
 
+
 @interface VisageFilter : GPUImageFilter
+
+- (instancetype)init;
 
 @end

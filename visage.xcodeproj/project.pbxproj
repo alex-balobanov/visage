@@ -17,6 +17,16 @@
 		FAEBBA5A1F431FFD00389201 /* VisageFilter.mm in Sources */ = {isa = PBXBuildFile; fileRef = FAEBBA591F431FFD00389201 /* VisageFilter.mm */; };
 		FAEBBA5C1F4363BE00389201 /* libVisageVision.a in Frameworks */ = {isa = PBXBuildFile; fileRef = FAEBBA5B1F4363BE00389201 /* libVisageVision.a */; };
 		FAEBBA5E1F43646B00389201 /* GLKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = FAEBBA5D1F43646B00389201 /* GLKit.framework */; };
+		FAEBBA6B1F4368FF00389201 /* bdtsdata in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA601F4368FF00389201 /* bdtsdata */; };
+		FAEBBA6C1F4368FF00389201 /* candide3-ClosedMouth.wfm in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA611F4368FF00389201 /* candide3-ClosedMouth.wfm */; };
+		FAEBBA6D1F4368FF00389201 /* candide3.fdp in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA621F4368FF00389201 /* candide3.fdp */; };
+		FAEBBA6E1F4368FF00389201 /* candide3.wfm in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA631F4368FF00389201 /* candide3.wfm */; };
+		FAEBBA6F1F4368FF00389201 /* Face Detector.cfg in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA641F4368FF00389201 /* Face Detector.cfg */; };
+		FAEBBA711F4368FF00389201 /* Facial Features Tracker - High.cfg in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA661F4368FF00389201 /* Facial Features Tracker - High.cfg */; };
+		FAEBBA721F4368FF00389201 /* Facial Features Tracker - Low.cfg in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA671F4368FF00389201 /* Facial Features Tracker - Low.cfg */; };
+		FAEBBA731F4368FF00389201 /* Head Tracker.cfg in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA681F4368FF00389201 /* Head Tracker.cfg */; };
+		FAEBBA741F4368FF00389201 /* jk_300.fdp in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA691F4368FF00389201 /* jk_300.fdp */; };
+		FAEBBA751F4368FF00389201 /* jk_300.wfm in Resources */ = {isa = PBXBuildFile; fileRef = FAEBBA6A1F4368FF00389201 /* jk_300.wfm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -37,6 +47,16 @@
 		FAEBBA591F431FFD00389201 /* VisageFilter.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = VisageFilter.mm; sourceTree = "<group>"; };
 		FAEBBA5B1F4363BE00389201 /* libVisageVision.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libVisageVision.a; path = visagesdk/lib/libVisageVision.a; sourceTree = "<group>"; };
 		FAEBBA5D1F43646B00389201 /* GLKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLKit.framework; path = System/Library/Frameworks/GLKit.framework; sourceTree = SDKROOT; };
+		FAEBBA601F4368FF00389201 /* bdtsdata */ = {isa = PBXFileReference; lastKnownFileType = folder; name = bdtsdata; path = visagesdk/Samples/data/bdtsdata; sourceTree = SOURCE_ROOT; };
+		FAEBBA611F4368FF00389201 /* candide3-ClosedMouth.wfm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "candide3-ClosedMouth.wfm"; path = "visagesdk/Samples/data/candide3-ClosedMouth.wfm"; sourceTree = SOURCE_ROOT; };
+		FAEBBA621F4368FF00389201 /* candide3.fdp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = candide3.fdp; path = visagesdk/Samples/data/candide3.fdp; sourceTree = SOURCE_ROOT; };
+		FAEBBA631F4368FF00389201 /* candide3.wfm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = candide3.wfm; path = visagesdk/Samples/data/candide3.wfm; sourceTree = SOURCE_ROOT; };
+		FAEBBA641F4368FF00389201 /* Face Detector.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Face Detector.cfg"; path = "visagesdk/Samples/data/Face Detector.cfg"; sourceTree = SOURCE_ROOT; };
+		FAEBBA661F4368FF00389201 /* Facial Features Tracker - High.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Facial Features Tracker - High.cfg"; path = "visagesdk/Samples/data/Facial Features Tracker - High.cfg"; sourceTree = SOURCE_ROOT; };
+		FAEBBA671F4368FF00389201 /* Facial Features Tracker - Low.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Facial Features Tracker - Low.cfg"; path = "visagesdk/Samples/data/Facial Features Tracker - Low.cfg"; sourceTree = SOURCE_ROOT; };
+		FAEBBA681F4368FF00389201 /* Head Tracker.cfg */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = "Head Tracker.cfg"; path = "visagesdk/Samples/data/Head Tracker.cfg"; sourceTree = SOURCE_ROOT; };
+		FAEBBA691F4368FF00389201 /* jk_300.fdp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = jk_300.fdp; path = visagesdk/Samples/data/jk_300.fdp; sourceTree = SOURCE_ROOT; };
+		FAEBBA6A1F4368FF00389201 /* jk_300.wfm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; name = jk_300.wfm; path = visagesdk/Samples/data/jk_300.wfm; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -120,6 +140,16 @@
 		FAEBBA5F1F4365D100389201 /* visagesdk */ = {
 			isa = PBXGroup;
 			children = (
+				FAEBBA601F4368FF00389201 /* bdtsdata */,
+				FAEBBA611F4368FF00389201 /* candide3-ClosedMouth.wfm */,
+				FAEBBA621F4368FF00389201 /* candide3.fdp */,
+				FAEBBA631F4368FF00389201 /* candide3.wfm */,
+				FAEBBA641F4368FF00389201 /* Face Detector.cfg */,
+				FAEBBA661F4368FF00389201 /* Facial Features Tracker - High.cfg */,
+				FAEBBA671F4368FF00389201 /* Facial Features Tracker - Low.cfg */,
+				FAEBBA681F4368FF00389201 /* Head Tracker.cfg */,
+				FAEBBA691F4368FF00389201 /* jk_300.fdp */,
+				FAEBBA6A1F4368FF00389201 /* jk_300.wfm */,
 			);
 			name = visagesdk;
 			sourceTree = "<group>";
@@ -186,9 +216,19 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				FAEBBA721F4368FF00389201 /* Facial Features Tracker - Low.cfg in Resources */,
+				FAEBBA6F1F4368FF00389201 /* Face Detector.cfg in Resources */,
+				FAEBBA6C1F4368FF00389201 /* candide3-ClosedMouth.wfm in Resources */,
+				FAEBBA711F4368FF00389201 /* Facial Features Tracker - High.cfg in Resources */,
+				FAEBBA731F4368FF00389201 /* Head Tracker.cfg in Resources */,
 				FAEBBA511F42FA2200389201 /* LaunchScreen.storyboard in Resources */,
+				FAEBBA6E1F4368FF00389201 /* candide3.wfm in Resources */,
 				FAEBBA4E1F42FA2200389201 /* Assets.xcassets in Resources */,
 				FAEBBA4C1F42FA2200389201 /* Main.storyboard in Resources */,
+				FAEBBA6B1F4368FF00389201 /* bdtsdata in Resources */,
+				FAEBBA741F4368FF00389201 /* jk_300.fdp in Resources */,
+				FAEBBA6D1F4368FF00389201 /* candide3.fdp in Resources */,
+				FAEBBA751F4368FF00389201 /* jk_300.wfm in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
