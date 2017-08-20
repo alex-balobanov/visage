@@ -10,7 +10,10 @@
 #import <VisageTracker.h>
 #import <GLKit/GLKit.h>
 
-#define MAXIMUM_NUMBER_OF_FACES 20
+#define MAXIMUM_NUMBER_OF_FACES 	20
+#define TRACKER_CONFIG 				"Facial Features Tracker - High.cfg"
+#define LENGTH(x) 					(sizeof(x) / sizeof(*x))
+#define FEATURE_POINTS(x) 			{x, sizeof(x) / sizeof(*x)}
 
 // vertex shader
 static NSString *const vertexShaderString = SHADER_STRING
@@ -22,6 +25,7 @@ static NSString *const vertexShaderString = SHADER_STRING
  uniform mat4 projection;
  varying vec2 textureCoordinate;
  void main() {
+	 gl_PointSize = 5.0;
 	 gl_Position = projection * view * model * position;
 	 textureCoordinate = inputTextureCoordinate.xy;
  }
@@ -43,6 +47,17 @@ namespace VisageSDK {
 	void initializeLicenseManager(const char *licenseKeyFileFolder);
 }
 
+// visage feature points
+struct FeaturePointId {
+	int group;
+	int index;
+};
+
+struct FeaturePoints {
+	FeaturePointId *ids;
+	int count;
+};
+
 // implementation
 @interface VisageFilter() {
 	// visage sdk
@@ -62,6 +77,7 @@ namespace VisageSDK {
 	
 	// for shaders
 	GLuint _attributePosition;					// "position"
+	GLuint _attributeNormal;					// "normal"
 	GLuint _attributeInputTextureCoordinate;	// "inputTextureCoordinate"
 	GLuint _uniformModelMatrix;					// "model"
 	GLuint _uniformViewMatrix;					// "view"
@@ -79,14 +95,21 @@ namespace VisageSDK {
 - (instancetype)init {
 	if ((self = [super init])) {
 		// init visage sdk
-		// VisageSDK::initializeLicenseManager("name-of-the-license-file.vlc");
-		_tracker = new VisageSDK::VisageTracker("Facial Features Tracker - High.cfg");
+		//VisageSDK::initializeLicenseManager("name-of-the-license-file.vlc");
+		_tracker = new VisageSDK::VisageTracker(TRACKER_CONFIG);
 		
 		// create vertex and fragment shaders
 		[self prepareShaders];
 	}
 	return self;
 }
+
+- (void)changeMode {
+	runSynchronouslyOnVideoProcessingQueue(^{
+		
+	});
+}
+
 
 - (void)prepareShaders {
 	// vertex and fragment shaders
@@ -112,11 +135,13 @@ namespace VisageSDK {
 		
 		// attributes
 		_attributePosition = [self.program attributeIndex:@"position"];
+		_attributeNormal = [self.program attributeIndex:@"normal"];
 		_attributeInputTextureCoordinate = [self.program attributeIndex:@"inputTextureCoordinate"];
 		
 		// enable attributes
 		[GPUImageContext setActiveShaderProgram:self.program];
 		glEnableVertexAttribArray(_attributePosition);
+		glEnableVertexAttribArray(_attributeNormal);
 		glEnableVertexAttribArray(_attributeInputTextureCoordinate);
 	});
 }
@@ -137,6 +162,15 @@ namespace VisageSDK {
 #pragma mark -
 #pragma mark Visage SDK
 
+- (void)featurePoints:(VisageSDK::FDP *)fdp ids:(FeaturePointId *)ids count:(NSInteger)count buffer:(GLKVector3 *)buffer {
+	for (int i = 0; i < count; ++i) {
+		const VisageSDK::FeaturePoint &fp = fdp->getFP(ids[i].group, ids[i].index);
+		if (fp.defined) {
+			buffer[i] = {fp.pos[0], fp.pos[1], fp.pos[2]};
+		}
+	}
+}
+
 - (void)genWireframeModelIndicesFrom:(const VisageSDK::FaceData &)faceData {
 	// check wireframe indices buffer
 	_wireframeIndicesCount = faceData.faceModelTriangleCount * 6;	// 1 triangle => 3 lines (6 indices)
@@ -152,7 +186,7 @@ namespace VisageSDK {
 	// build wireframe model
 	for (int i = 0; i < faceData.faceModelTriangleCount; ++i) {
 		// 3 vertices for each triangle
-		GLushort index0 = static_cast<GLushort>(faceData.faceModelTriangles[3 * i + 0]);
+		GLushort index0 = static_cast<GLushort>(faceData.faceModelTriangles[3 * i]);
 		GLushort index1 = static_cast<GLushort>(faceData.faceModelTriangles[3 * i + 1]);
 		GLushort index2 = static_cast<GLushort>(faceData.faceModelTriangles[3 * i + 2]);
 		
@@ -227,7 +261,8 @@ namespace VisageSDK {
 	
 	// clear color and depth buffer
 	glClearColor(backgroundColorRed, backgroundColorGreen, backgroundColorBlue, backgroundColorAlpha);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	//glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT);
 	
 	// draw original frame (input framebuffer)
 	glActiveTexture(GL_TEXTURE2);
@@ -245,6 +280,8 @@ namespace VisageSDK {
 		// check status
 		if (trackerStatus[i] == TRACK_STAT_OK) {
 			VisageSDK::FaceData &currentFaceData = faceData[i];
+			glBindTexture(GL_TEXTURE_2D, [firstInputFramebuffer texture]);
+			glUniform1i(_uniformInputImageTexture, 2);
 			
 			// model matrix
 			const float *r = currentFaceData.faceRotation;
@@ -278,15 +315,49 @@ namespace VisageSDK {
 			//GLKMatrix4 projectionMatrix = GLKMatrix4MakeFrustum(-frustum_x,frustum_x,-frustum_y,frustum_y,frustum_near,frustum_far);
 			GLKMatrix4 projectionMatrix = GLKMatrix4MakeFrustum(-frustum_x, frustum_x, frustum_y, -frustum_y,frustum_near,frustum_far); // show upside-down
 			glUniformMatrix4fv(_uniformProjectionMatrix, 1, 0, projectionMatrix.m);
-			
-			// load vertices from face model
-			glVertexAttribPointer(_attributePosition, 3, GL_FLOAT, 0, 0, currentFaceData.faceModelVertices);
-			
+ 
 			// draw current wireframe model
 			[self genWireframeModelIndicesFrom:currentFaceData];
 			if (_wireframeIndicesCount) {
-				glUniform4f(_uniformColor, 1.0, 0.5, 0.5, 1.0);
+				glVertexAttribPointer(_attributePosition, 3, GL_FLOAT, 0, 0, currentFaceData.faceModelVertices);
+				glUniform4f(_uniformColor, 0.0, 1.0, 0.0, 1.0);
 				glDrawElements(GL_LINES, _wireframeIndicesCount, GL_UNSIGNED_SHORT, _wireframeIndices);
+			}
+
+			// draw feature points
+			static FeaturePointId mouthInnerPointIds[] = { {2,	2}, {2,	6}, {2,	4}, {2,	8}, {2,	3}, {2,	9}, {2,	5}, {2,	7} };
+			static FeaturePointId mouthOuterPointIds[] = { {8,	1}, {8,	10}, {8, 5}, {8, 3}, {8, 7}, {8, 2}, {8, 8}, {8, 4}, {8, 6}, {8, 9} };
+			static FeaturePointId rightEyebrowPointIds[] = { {4, 6}, {14, 4}, {4, 4}, {14, 2}, {4, 2} };
+			static FeaturePointId rightEyePointIds[] = { {3, 12}, {12, 10}, {3, 2}, {12, 6}, {3, 8}, {12, 8}, {3, 4}, {12, 12} };
+			static FeaturePointId leftEyebrowPointIds[] = { {4, 1}, {14, 1}, {4, 3}, {14, 3}, {4, 5} };
+			static FeaturePointId leftEyePointIds[] = { {3, 11}, {12, 9}, {3, 1}, {12, 5}, {3, 7}, {12, 7}, {3, 3}, {12, 11} };
+			static FeaturePointId noseInnerPointIds[] = { {9, 1}, {9, 5}, {9, 15}, {9, 4}, {9, 2}, {9, 3} };
+			static FeaturePointId noseOuterPointIds[] = { {9, 6}, {9, 14}, {9, 2}, {9, 3},  {9, 1}, {9, 13}, {9, 7} };
+			
+			static GLKVector3 buffer[LENGTH(mouthInnerPointIds) + LENGTH(mouthOuterPointIds) +
+									 LENGTH(rightEyebrowPointIds) + LENGTH(rightEyePointIds) +
+									 LENGTH(leftEyebrowPointIds) + LENGTH(leftEyePointIds) +
+									 LENGTH(noseInnerPointIds) + LENGTH(noseOuterPointIds)] = {0};
+			
+			static FeaturePoints elements[] = {
+				FEATURE_POINTS(mouthInnerPointIds), FEATURE_POINTS(mouthOuterPointIds),
+				FEATURE_POINTS(rightEyebrowPointIds), FEATURE_POINTS(rightEyePointIds),
+				FEATURE_POINTS(leftEyebrowPointIds), FEATURE_POINTS(leftEyePointIds),
+				FEATURE_POINTS(noseInnerPointIds), FEATURE_POINTS(noseOuterPointIds),
+			};
+			
+			glUniform4f(_uniformColor, 1.0, 0.0, 0.0, 1.0);
+			glVertexAttribPointer(_attributeInputTextureCoordinate, 3, GL_FLOAT, 0, 0, buffer);
+			glVertexAttribPointer(_attributePosition, 3, GL_FLOAT, 0, 0, buffer);
+			
+			VisageSDK::FDP *fdp = currentFaceData.featurePoints3DRelative;
+			int offset = 0;
+			for (int n = 0; n < sizeof(elements) / sizeof(*elements); ++n) {
+				FeaturePoints &element = elements[n];
+				[self featurePoints:fdp ids:element.ids count:element.count buffer:buffer + offset];
+				glDrawArrays(GL_LINE_LOOP, offset, element.count);
+				glDrawArrays(GL_POINTS, offset, element.count);
+				offset += element.count;
 			}
 		}
 	}
