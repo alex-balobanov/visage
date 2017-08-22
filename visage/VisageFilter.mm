@@ -31,7 +31,7 @@ static NSString *const vertexShaderString = SHADER_STRING
 	 gl_Position = projection * view * outFragPos;
 	 gl_PointSize = 5.0;
  }
- );
+);
 
 // fragment shader
 static NSString *const fragmentShaderString = SHADER_STRING \
@@ -61,7 +61,7 @@ static NSString *const fragmentShaderString = SHADER_STRING \
 	 highp vec4 specular = specularStrength * spec * lightColor;
 	 gl_FragColor = (ambient + diffuse + specular) * objectColor;
  }
- );
+);
 
 // neccessary prototype declaration for licensing visage sdk
 namespace VisageSDK {
@@ -84,6 +84,8 @@ struct FeaturePoints {
 @interface VisageFilter() {
 	// visage sdk
 	VisageSDK::VisageTracker *_tracker;
+	int _trackerStatus[MAXIMUM_NUMBER_OF_FACES];
+	VisageSDK::FaceData _faceData[MAXIMUM_NUMBER_OF_FACES];
 	
 	// wireframe indices buffer
 	GLushort *_wireframeIndices;				// wireframe indices buffer
@@ -128,16 +130,12 @@ struct FeaturePoints {
 		
 		// create vertex and fragment shaders
 		[self prepareShaders];
+		
+		// default view mode
+		_mode = VisageFilterViewModeMesh;
 	}
 	return self;
 }
-
-- (void)changeMode {
-	runSynchronouslyOnVideoProcessingQueue(^{
-		
-	});
-}
-
 
 - (void)prepareShaders {
 	// vertex and fragment shaders
@@ -190,27 +188,114 @@ struct FeaturePoints {
 	}
 }
 
+- (void)setMode:(VisageFilterViewMode)mode {
+	runSynchronouslyOnVideoProcessingQueue(^{
+		_mode = mode;
+	});
+}
+
+- (void)saveModel {
+	runSynchronouslyOnVideoProcessingQueue(^{
+		for (int i = 0; i < MAXIMUM_NUMBER_OF_FACES; ++i) {
+			[self exportModel:_faceData[i] withFileName:[NSString stringWithFormat:@"model%d", i]];
+		}
+	});
+}
+
 #pragma mark -
-#pragma mark Visage SDK
+#pragma mark Export
+
+- (void)exportModel:(const VisageSDK::FaceData &)faceData withFileName:(NSString *)fileName {
+	// file names in app documents folder
+	NSURL *documents = [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
+	NSString *path = documents.path;
+	NSString *objFile = [path stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.obj", fileName]];
+	NSString *mtlFile = [path stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.mtl", fileName]];
+	NSString *pngFile = [path stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png", fileName]];
+	
+	// export to OBJ
+	NSMutableString *obj = [NSMutableString string];
+	[obj appendString:@"mtllib model.mtl\n"];
+	
+	// vertices
+	GLKVector3 *vertices = (GLKVector3 *)faceData.faceModelVertices;
+	for (int t = 0; t < faceData.faceModelVertexCount; ++t) {
+		GLKVector3 v = vertices[t];
+		[obj appendFormat:@"v %f %f %f\n", v.x, v.y, v.z];
+	}
+	
+	// texture coords
+	for (int t = 0; t < faceData.faceModelVertexCount; ++t) {
+		float u = faceData.faceModelTextureCoords[2 * t + 0];
+		float v = faceData.faceModelTextureCoords[2 * t + 1];
+		[obj appendFormat:@"vt %f %f\n", 1 - u, 1 - v];
+	}
+	
+	// normals
+	GLKVector3 normals[1000] = {0};
+	for (int i = 0; i < faceData.faceModelTriangleCount; ++i) {
+		// 3 vertices for each triangle
+		int index0 = faceData.faceModelTriangles[3 * i + 2];
+		int index1 = faceData.faceModelTriangles[3 * i + 1];
+		int index2 = faceData.faceModelTriangles[3 * i + 0];
+		GLKVector3 &A = vertices[index0];
+		GLKVector3 &B = vertices[index1];
+		GLKVector3 &C = vertices[index2];
+		GLKVector3 N = GLKVector3CrossProduct( GLKVector3Subtract(B, A), GLKVector3Subtract(C, A));
+		normals[index0] = GLKVector3Add(normals[index0], N);
+		normals[index1] = GLKVector3Add(normals[index1], N);
+		normals[index2] = GLKVector3Add(normals[index2], N);
+	}
+	for (int i = 0; i < faceData.faceModelVertexCount; ++i) {
+		GLKVector3 n = GLKVector3Normalize(normals[i]);
+		[obj appendFormat:@"vn %f %f %f\n", n.x, n.y, n.z];
+	}
+	
+	// faces
+	[obj appendString:@"usemtl material\n"];
+	for (int t = 0; t < faceData.faceModelTriangleCount; ++t) {
+		int i0 = faceData.faceModelTriangles[3 * t + 2] + 1;
+		int i1 = faceData.faceModelTriangles[3 * t + 1] + 1;
+		int i2 = faceData.faceModelTriangles[3 * t + 0] + 1;
+		[obj appendFormat:@"f %d/%d/%d %d/%d/%d %d/%d/%d\n", i0, i0, i0, i1, i1, i1, i2, i2, i2];
+	}
+	[[obj dataUsingEncoding:NSUTF8StringEncoding] writeToFile:objFile atomically:YES];
+	
+	// export to MTL
+	NSMutableString *mtl = [NSMutableString string];
+	[mtl appendString:@"newmtl material\n"];
+	[mtl appendString:@"Ka 1.000000 1.000000 1.000000\n"];
+	[mtl appendString:@"Kd 1.000000 1.000000 1.000000\n"];
+	[mtl appendString:@"Ks 0.000000 0.000000 0.000000\n"];
+	[mtl appendString:@"Tr 1.000000\n"];
+	[mtl appendString:@"illum 1\n"];
+	[mtl appendString:@"Ns 0.000000\n"];
+	[mtl appendString:@"map_Kd model.png\n"];
+	[[mtl dataUsingEncoding:NSUTF8StringEncoding] writeToFile:mtlFile atomically:YES];
+	
+	// export PNG
+	CGDataProviderRef dataProvider = CGDataProviderCreateWithData(NULL, _imageData, _imageDataLength, nil);
+	CGColorSpaceRef defaultRGBColorSpace = CGColorSpaceCreateDeviceRGB();
+	CGImageRef cgImageFromBytes = CGImageCreate(_imageWidth, _imageHeight, 8, 32, 4 * _imageWidth, defaultRGBColorSpace, kCGBitmapByteOrderDefault | kCGImageAlphaLast, dataProvider, NULL, NO, kCGRenderingIntentDefault);
+	UIImage *image = [[UIImage alloc] initWithCGImage:cgImageFromBytes];
+	[UIImagePNGRepresentation(image) writeToFile:pngFile atomically:YES];
+	CGDataProviderRelease(dataProvider);
+	CGColorSpaceRelease(defaultRGBColorSpace);
+}
+
+#pragma mark -
+#pragma mark Tracking
 
 - (void)featurePoints:(VisageSDK::FDP *)fdp ids:(FeaturePointId *)ids count:(NSInteger)count buffer:(GLKVector3 *)buffer {
-	//	NSMutableArray *array = [NSMutableArray arrayWithCapacity:count];
-	//	VisageSDK::FDP *fdp = trackingData.featurePoints2D;
 	for (int i = 0; i < count; ++i) {
 		const VisageSDK::FeaturePoint &fp = fdp->getFP(ids[i].group, ids[i].index);
 		if (fp.defined) {
-			// convert from [0..1, 0..1] to [0..w, 0..h] and flip upside down
-			//[array addObject:[NSValue valueWithCGPoint:CGPointMake(fp.pos[0] * (float)_imageWidth, (1.0 - fp.pos[1]) * (float)_imageHeight)]];
-			//			buffer[i * 2] = fp.pos[0] * 2 - 1;
-			//			buffer[i * 2 + 1] = fp.pos[1] * 2 - 1;
-			
-			buffer[i] = {fp.pos[0], fp.pos[1], fp.pos[2]};
+			buffer[i] = { fp.pos[0], fp.pos[1], fp.pos[2] };
 		}
 	}
-	//	return [array copy];
 }
 
-- (int *)trackFacesIn:(GPUImageFramebuffer *)framebuffer outputFaceData:(VisageSDK::FaceData *)outputFaceData {
+- (void)trackFacesIn:(GPUImageFramebuffer *)framebuffer {
 	// update image data buffer
 	_imageWidth = framebuffer.size.width;
 	_imageHeight = framebuffer.size.height;
@@ -229,14 +314,15 @@ struct FeaturePoints {
 	[framebuffer activateFramebuffer];
 	glReadPixels(0, 0, _imageWidth, _imageHeight, GL_RGBA, GL_UNSIGNED_BYTE, _imageData);
 	
-	// track image data
-	return _tracker->track(_imageWidth, _imageHeight, (const char *)_imageData, outputFaceData, VISAGE_FRAMEGRABBER_FMT_RGBA, VISAGE_FRAMEGRABBER_ORIGIN_TL, 0, -1, MAXIMUM_NUMBER_OF_FACES);
+	// track image data and save the results for future use
+	int *trackerStatus = _tracker->track(_imageWidth, _imageHeight, (const char *)_imageData, _faceData, VISAGE_FRAMEGRABBER_FMT_RGBA, VISAGE_FRAMEGRABBER_ORIGIN_TL, 0, -1, MAXIMUM_NUMBER_OF_FACES);
+	memcpy(_trackerStatus, trackerStatus, sizeof(_trackerStatus));
 }
 
 #pragma mark -
-#pragma mark Draw Modes
+#pragma mark Rendering
 
-- (void)drawWireframeModel:(const VisageSDK::FaceData &)faceData {
+- (void)renderWireframeModel:(const VisageSDK::FaceData &)faceData {
 	// check wireframe indices buffer
 	_wireframeIndicesCount = faceData.faceModelTriangleCount * 6;	// 1 triangle => 3 lines (6 indices)
 	if (!_wireframeIndices || _wireframeIndicesMaxCount < _wireframeIndicesCount) {
@@ -284,7 +370,7 @@ struct FeaturePoints {
 	}
 }
 
-- (void)drawFeaturePoints:(const VisageSDK::FaceData &)faceData {
+- (void)renderFeaturePoints:(const VisageSDK::FaceData &)faceData {
 	// feature points
 	
 	static FeaturePointId physicalcontourPointIds[] = { {15, 1}, {15, 3}, {15, 5}, {15, 7}, {15, 9}, {15, 11}, {15, 13}, {15, 15}, {15, 17},
@@ -326,7 +412,7 @@ struct FeaturePoints {
 	}
 }
 
-- (void)drawMeshModel:(const VisageSDK::FaceData &)faceData modelMatrix:(GLKMatrix4)modelMatrix {
+- (void)renderMeshModel:(const VisageSDK::FaceData &)faceData modelMatrix:(GLKMatrix4)modelMatrix {
 	// check normals buffer
 	_normalsCount = faceData.faceModelVertexCount;
 	if (!_normals || _normalssMaxCount < _normalsCount) {
@@ -377,8 +463,7 @@ struct FeaturePoints {
 	}
 	
 	// track faces in the input frame buffer
-	static VisageSDK::FaceData faceData[MAXIMUM_NUMBER_OF_FACES];
-	int *trackerStatus = [self trackFacesIn:firstInputFramebuffer outputFaceData:faceData];
+	[self trackFacesIn:firstInputFramebuffer];
 	
 	// create and activate output frame buffer
 	[GPUImageContext setActiveShaderProgram:filterProgram];
@@ -409,11 +494,10 @@ struct FeaturePoints {
 	glCullFace(GL_BACK);
 	
 	// draw faces
-	for (int f = 0; f < MAXIMUM_NUMBER_OF_FACES; ++f) {
-		
+	for (int i = 0; i < MAXIMUM_NUMBER_OF_FACES; ++i) {
 		// check status
-		if (trackerStatus[f] == TRACK_STAT_OK) {
-			VisageSDK::FaceData &currentFaceData = faceData[f];
+		if (_trackerStatus[i] == TRACK_STAT_OK) {
+			VisageSDK::FaceData &currentFaceData = _faceData[i];
 			
 			// common parameters
 			glUniform4f(_uniformObjectColor, 0.0, 0.0, 0.0, 1.0);
@@ -454,10 +538,24 @@ struct FeaturePoints {
 			GLKMatrix4 projectionMatrix = GLKMatrix4MakeFrustum(-frustum_x, frustum_x, frustum_y, -frustum_y,frustum_near,frustum_far); // show upside-down
 			glUniformMatrix4fv(_uniformProjectionMatrix, 1, 0, projectionMatrix.m);
 
-			// draw
-			//[self drawFeaturePoints:currentFaceData];
-			//[self drawWireframeModel:currentFaceData];
-			[self drawMeshModel:currentFaceData modelMatrix:modelMatrix];
+			// rendering depends on current view mode
+			switch (_mode) {
+				case VisageFilterViewModeFeaturePoints:
+					[self renderFeaturePoints:currentFaceData];
+					break;
+					
+				case VisageFilterViewModeWireframe:
+					[self renderWireframeModel:currentFaceData];
+					break;
+					
+				case VisageFilterViewModeMesh:
+					[self renderMeshModel:currentFaceData modelMatrix:modelMatrix];
+					break;
+					
+				default:
+					NSAssert(NO, @"Unknown view mode.");
+					break;
+			}
 		}
 	}
 	

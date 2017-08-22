@@ -18,9 +18,17 @@ extern "C" {
 }
 #endif /* defined(__cplusplus) */
 
+typedef NS_ENUM(NSInteger, VisageFilterViewMode) {
+	VisageFilterViewModeFeaturePoints,
+	VisageFilterViewModeWireframe,
+	VisageFilterViewModeMesh,
+};
 
 @interface VisageFilter : GPUImageFilter
 
+@property(nonatomic) VisageFilterViewMode mode;
+
 - (instancetype)init;
+- (void)saveModel;
 
 @end
