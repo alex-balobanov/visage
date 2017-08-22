@@ -57,4 +57,17 @@
 	// Dispose of any resources that can be recreated.
 }
 
+#pragma mark -
+#pragma mark Actions
+
+- (IBAction)changeViewButtonPressed:(id)sender {
+	static VisageFilterViewMode modes[] = { VisageFilterViewModeFeaturePoints, VisageFilterViewModeWireframe, VisageFilterViewModeMesh };
+	static NSUInteger index = 0;
+	self.filter.mode = modes[++index % (sizeof(modes)/sizeof(*modes))];
+}
+
+- (IBAction)saveModelButtonPressed:(id)sender {
+	[self.filter saveModel];
+}
+
 @end
