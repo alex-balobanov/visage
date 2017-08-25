@@ -13,7 +13,30 @@
 #define MAXIMUM_NUMBER_OF_FACES 	20
 #define TRACKER_CONFIG 				"Facial Features Tracker - High.cfg"
 #define LENGTH(x) 					(sizeof(x) / sizeof(*x))
-#define FEATURE_POINTS(x, b) 		{x, sizeof(x) / sizeof(*x), b}
+#define FEATURE_POINTS(x) 			{x, sizeof(x) / sizeof(*x)}
+
+// neccessary prototype declaration for licensing visage sdk
+namespace VisageSDK {
+	void initializeLicenseManager(const char *licenseKeyFileFolder);
+}
+
+// visage feature point identifier
+struct FeaturePointId {
+	int group;
+	int index;
+};
+
+// visage feature points
+struct FeaturePoints {
+	FeaturePointId *ids;
+	int count;
+};
+
+// Vertex attributes
+struct Vertex {
+	GLKVector4 position;
+	GLKVector4 normal;
+};
 
 // vertex shader
 static NSString *const vertexShaderString = SHADER_STRING
@@ -62,28 +85,37 @@ static NSString *const fragmentShaderString = SHADER_STRING \
  }
 );
 
-// neccessary prototype declaration for licensing visage sdk
-namespace VisageSDK {
-	void initializeLicenseManager(const char *licenseKeyFileFolder);
-}
+// feature points
+static FeaturePointId physicalcontourPointIds[] = { {15, 1}, {15, 3}, {15, 5}, {15, 7}, {15, 9}, {15, 11}, {15, 13}, {15, 15}, {15, 17}, {15, 16}, {15, 14}, {15, 12}, {15, 10}, {15, 8}, {15, 6}, {15, 4}, {15, 2} };
+static FeaturePointId mouthInnerPointIds[] = { {2,	2}, {2,	6}, {2,	4}, {2,	8}, {2,	3}, {2,	9}, {2,	5}, {2,	7}, {2, 2} };
+static FeaturePointId mouthOuterPointIds[] = { {8,	1}, {8,	10}, {8, 5}, {8, 3}, {8, 7}, {8, 2}, {8, 8}, {8, 4}, {8, 6}, {8, 9}, {8, 1} };
+static FeaturePointId rightEyebrowPointIds[] = { {4, 6}, {14, 4}, {4, 4}, {14, 2}, {4, 2} };
+static FeaturePointId rightEyePointIds[] = { {3, 12}, {12, 10}, {3, 2}, {12, 6}, {3, 8}, {12, 8}, {3, 4}, {12, 12}, {3, 12} };
+static FeaturePointId leftEyebrowPointIds[] = { {4, 1}, {14, 1}, {4, 3}, {14, 3}, {4, 5} };
+static FeaturePointId leftEyePointIds[] = { {3, 11}, {12, 9}, {3, 1}, {12, 5}, {3, 7}, {12, 7}, {3, 3}, {12, 11}, {3, 11} };
+static FeaturePointId noseInnerPointIds[] = { {9, 1}, {9, 5}, {9, 15}, {9, 4}, {9, 2}, {9, 3} };
+static FeaturePointId noseOuterPointIds[] = { {9, 6}, {9, 14}, {9, 2}, {9, 3},  {9, 1}, {9, 13}, {9, 7} };
 
-// visage feature point identifier
-struct FeaturePointId {
-	int group;
-	int index;
-};
+#define MAXIMUM_NUMBER_OF_FEATURE_POINTS  (LENGTH(physicalcontourPointIds) + \
+											LENGTH(mouthInnerPointIds) + \
+											LENGTH(mouthOuterPointIds) + \
+											LENGTH(rightEyebrowPointIds) + \
+											LENGTH(rightEyePointIds) + \
+											LENGTH(leftEyebrowPointIds) + \
+											LENGTH(leftEyePointIds) + \
+											LENGTH(noseInnerPointIds) + \
+											LENGTH(noseOuterPointIds))
 
-// visage feature points
-struct FeaturePoints {
-	FeaturePointId *ids;
-	int count;
-	BOOL closed;
-};
-
-// Vertex attributes
-struct Vertex {
-	GLKVector4 position;
-	GLKVector4 normal;
+static FeaturePoints featurePointsElements[] = {
+	FEATURE_POINTS(physicalcontourPointIds),
+	FEATURE_POINTS(mouthInnerPointIds),
+	FEATURE_POINTS(mouthOuterPointIds),
+	FEATURE_POINTS(rightEyebrowPointIds),
+	FEATURE_POINTS(rightEyePointIds),
+	FEATURE_POINTS(leftEyebrowPointIds),
+	FEATURE_POINTS(leftEyePointIds),
+	FEATURE_POINTS(noseInnerPointIds),
+	FEATURE_POINTS(noseOuterPointIds),
 };
 
 // implementation
@@ -92,15 +124,12 @@ struct Vertex {
 	VisageSDK::VisageTracker *_tracker;
 	int _trackerStatus[MAXIMUM_NUMBER_OF_FACES];
 	VisageSDK::FaceData _faceData[MAXIMUM_NUMBER_OF_FACES];
-	
-	// vertext buffer
-	Vertex *_vertices;
-	GLint _vertexCount;
-	
-	// mesh indices buffer
-//	GLushort *_meshIndices;						// mesh indices buffer
-//	GLint _meshIndicesCount;					// mesh indices count
+	GLKVector4 _featurePoints[ MAXIMUM_NUMBER_OF_FEATURE_POINTS * MAXIMUM_NUMBER_OF_FACES ];
 
+	// vertext buffer
+	Vertex *_vertices;							// [position, normal, ...]
+	GLint _vertexCount;							// vertices count
+	
 	// wireframe indices buffer
 	GLushort *_wireframeIndices;				// wireframe indices buffer
 	GLint _wireframeIndicesCount;				// wireframe indices count
@@ -138,9 +167,6 @@ struct Vertex {
 		
 		// create vertex and fragment shaders
 		[self prepareShaders];
-		
-		// default view mode
-		_mode = VisageFilterViewModeMesh;
 	}
 	return self;
 }
@@ -188,9 +214,6 @@ struct Vertex {
 	if (_vertices) {
 		free(_vertices);
 	}
-//	if (_meshIndices) {
-//		free(_meshIndices);
-//	}
 	if (_wireframeIndices) {
 		free(_wireframeIndices);
 	}
@@ -207,71 +230,44 @@ struct Vertex {
 
 - (void)saveModel {
 	runSynchronouslyOnVideoProcessingQueue(^{
+		// file names in app documents folder
+		NSURL *documents = [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
+		NSString *path = documents.path;
+
+		GLint verticesOffset = 0;
+		BOOL exportOtherFiles = NO;
 		for (int i = 0; i < MAXIMUM_NUMBER_OF_FACES; ++i) {
-			[self exportModel:_faceData[i] withFileName:[NSString stringWithFormat:@"model%d", i]];
+			if (_trackerStatus[i] == TRACK_STAT_OK) {
+				exportOtherFiles = YES;
+				VisageSDK::FaceData &faceData = _faceData[i];
+				Vertex *vertices = _vertices + verticesOffset;
+				
+				NSString *objFile = [path stringByAppendingPathComponent:[NSString stringWithFormat:@"model%d.obj", i]];
+				NSLog(@"Export {%@}", objFile);
+				[self exportObj:objFile vertices:vertices textureCoords:faceData.faceModelTextureCoords vertexCount:faceData.faceModelVertexCount triangles:faceData.faceModelTriangles triangleCount:faceData.faceModelTriangleCount];
+
+				// move to the next face data
+				verticesOffset += faceData.faceModelVertexCount;
+			}
 		}
+		
+		if (exportOtherFiles) {
+			NSString *pngFile = [path stringByAppendingPathComponent:@"model.png"];
+			NSLog(@"Export {%@}", pngFile);
+			[self exportPng:pngFile];
+			
+			NSString *mtlFile = [path stringByAppendingPathComponent:@"model.mtl"];
+			NSLog(@"Export {%@}", mtlFile);
+			[self exportMtl:mtlFile];
+		}
+		
 	});
 }
 
 #pragma mark -
 #pragma mark Export
 
-- (void)exportModel:(const VisageSDK::FaceData &)faceData withFileName:(NSString *)fileName {
-	// file names in app documents folder
-	NSURL *documents = [[[NSFileManager defaultManager] URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask] lastObject];
-	NSString *path = documents.path;
-	NSString *objFile = [path stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.obj", fileName]];
-	NSString *mtlFile = [path stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.mtl", fileName]];
-	NSString *pngFile = [path stringByAppendingPathComponent:[NSString stringWithFormat:@"%@.png", fileName]];
-	
-	// export to OBJ
-	NSMutableString *obj = [NSMutableString string];
-	[obj appendString:@"mtllib model.mtl\n"];
-	
-	// vertices
-	GLKVector3 *vertices = (GLKVector3 *)faceData.faceModelVertices;
-	for (int t = 0; t < faceData.faceModelVertexCount; ++t) {
-		GLKVector3 v = vertices[t];
-		[obj appendFormat:@"v %f %f %f\n", v.x, v.y, v.z];
-	}
-	
-	// texture coords
-	for (int t = 0; t < faceData.faceModelVertexCount; ++t) {
-		float u = faceData.faceModelTextureCoords[2 * t + 0];
-		float v = faceData.faceModelTextureCoords[2 * t + 1];
-		[obj appendFormat:@"vt %f %f\n", 1 - u, 1 - v];
-	}
-	
-	// normals
-	GLKVector3 normals[1000] = {0};
-	for (int i = 0; i < faceData.faceModelTriangleCount; ++i) {
-		// 3 vertices for each triangle
-		int index0 = faceData.faceModelTriangles[3 * i + 2];
-		int index1 = faceData.faceModelTriangles[3 * i + 1];
-		int index2 = faceData.faceModelTriangles[3 * i + 0];
-		GLKVector3 &A = vertices[index0];
-		GLKVector3 &B = vertices[index1];
-		GLKVector3 &C = vertices[index2];
-		GLKVector3 N = GLKVector3CrossProduct( GLKVector3Subtract(B, A), GLKVector3Subtract(C, A));
-		normals[index0] = GLKVector3Add(normals[index0], N);
-		normals[index1] = GLKVector3Add(normals[index1], N);
-		normals[index2] = GLKVector3Add(normals[index2], N);
-	}
-	for (int i = 0; i < faceData.faceModelVertexCount; ++i) {
-		GLKVector3 n = GLKVector3Normalize(normals[i]);
-		[obj appendFormat:@"vn %f %f %f\n", n.x, n.y, n.z];
-	}
-	
-	// faces
-	[obj appendString:@"usemtl material\n"];
-	for (int t = 0; t < faceData.faceModelTriangleCount; ++t) {
-		int i0 = faceData.faceModelTriangles[3 * t + 2] + 1;
-		int i1 = faceData.faceModelTriangles[3 * t + 1] + 1;
-		int i2 = faceData.faceModelTriangles[3 * t + 0] + 1;
-		[obj appendFormat:@"f %d/%d/%d %d/%d/%d %d/%d/%d\n", i0, i0, i0, i1, i1, i1, i2, i2, i2];
-	}
-	[[obj dataUsingEncoding:NSUTF8StringEncoding] writeToFile:objFile atomically:YES];
-	
+- (void)exportMtl:(NSString *)mtlFile {
 	// export to MTL
 	NSMutableString *mtl = [NSMutableString string];
 	[mtl appendString:@"newmtl material\n"];
@@ -283,8 +279,9 @@ struct Vertex {
 	[mtl appendString:@"Ns 0.000000\n"];
 	[mtl appendString:@"map_Kd model.png\n"];
 	[[mtl dataUsingEncoding:NSUTF8StringEncoding] writeToFile:mtlFile atomically:YES];
-	
-	// export PNG
+}
+
+- (void)exportPng:(NSString *)pngFile {
 	CGDataProviderRef dataProvider = CGDataProviderCreateWithData(NULL, _imageData, _imageDataLength, nil);
 	CGColorSpaceRef defaultRGBColorSpace = CGColorSpaceCreateDeviceRGB();
 	CGImageRef cgImageFromBytes = CGImageCreate(_imageWidth, _imageHeight, 8, 32, 4 * _imageWidth, defaultRGBColorSpace, kCGBitmapByteOrderDefault | kCGImageAlphaLast, dataProvider, NULL, NO, kCGRenderingIntentDefault);
@@ -294,15 +291,50 @@ struct Vertex {
 	CGColorSpaceRelease(defaultRGBColorSpace);
 }
 
+- (void)exportObj:(NSString *)objFile vertices:(Vertex *)vertices textureCoords:(float *)textureCoords vertexCount:(int)vertexCount triangles:(int *)triangles triangleCount:(int)triangleCount {
+	
+	
+	// export to OBJ
+	NSMutableString *obj = [NSMutableString string];
+	[obj appendString:@"mtllib model.mtl\n"];
+	
+	// vertices
+	for (int i = 0; i < vertexCount; ++i) {
+		GLKVector4 &v = vertices[i].position;
+		[obj appendFormat:@"v %f %f %f\n", v.x, v.y, v.z];
+	}
+	
+	// texture coords
+	for (int i = 0; i < vertexCount; ++i) {
+		float u = textureCoords[2 * i + 0];
+		float v = textureCoords[2 * i + 1];
+		[obj appendFormat:@"vt %f %f\n", 1.0f - u, 1.0f - v];
+	}
+	
+	// normals
+	for (int i = 0; i < vertexCount; ++i) {
+		GLKVector4 &n = vertices[i].normal;
+		[obj appendFormat:@"vn %f %f %f\n", n.x, n.y, n.z];
+	}
+	
+	// faces
+	[obj appendString:@"usemtl material\n"];
+	for (int i = 0; i < triangleCount; ++i) {
+		int i0 = triangles[3 * i + 2] + 1;
+		int i1 = triangles[3 * i + 1] + 1;
+		int i2 = triangles[3 * i + 0] + 1;
+		[obj appendFormat:@"f %d/%d/%d %d/%d/%d %d/%d/%d\n", i0, i0, i0, i1, i1, i1, i2, i2, i2];
+	}
+	[[obj dataUsingEncoding:NSUTF8StringEncoding] writeToFile:objFile atomically:YES];
+}
+
 #pragma mark -
 #pragma mark Tracking
 
-- (void)featurePoints:(VisageSDK::FDP *)fdp ids:(FeaturePointId *)ids count:(NSInteger)count buffer:(GLKVector3 *)buffer {
+- (void)featurePoints:(VisageSDK::FDP *)fdp ids:(FeaturePointId *)ids count:(NSInteger)count buffer:(GLKVector4 *)buffer {
 	for (int i = 0; i < count; ++i) {
 		const VisageSDK::FeaturePoint &fp = fdp->getFP(ids[i].group, ids[i].index);
-		if (fp.defined) {
-			buffer[i] = { fp.pos[0], fp.pos[1], fp.pos[2] };
-		}
+		buffer[i] = fp.defined ? GLKVector4Make(fp.pos[0], fp.pos[1], fp.pos[2], 1.0f) : GLKVector4Make(0.0, 0.0, 0.0, 1.0);
 	}
 }
 
@@ -327,133 +359,125 @@ struct Vertex {
 	
 	// track image data and save the results for future use
 	int *trackerStatus = _tracker->track(_imageWidth, _imageHeight, (const char *)_imageData, _faceData, VISAGE_FRAMEGRABBER_FMT_RGBA, VISAGE_FRAMEGRABBER_ORIGIN_TL, 0, -1, MAXIMUM_NUMBER_OF_FACES);
-	if (trackerStatus) {
-		memcpy(_trackerStatus, trackerStatus, sizeof(_trackerStatus));
+	memcpy(_trackerStatus, trackerStatus, sizeof(_trackerStatus));
+	
+	// allocate the buffers
+	GLint vertexCount = 0;
+	GLint triangleCount = 0;
+	for (int i = 0; i < MAXIMUM_NUMBER_OF_FACES; ++i) {
+		if (_trackerStatus[i] == TRACK_STAT_OK) {
+			VisageSDK::FaceData &faceData = _faceData[i];
+			vertexCount += faceData.faceModelVertexCount;
+			triangleCount += faceData.faceModelTriangleCount;
+		}
+	}
+	if (triangleCount) {
+		// 1 triangle => 3 lines (6 indices)
+		GLint wireframeIndicesCount = triangleCount * 6;
+		if (!_wireframeIndices || _wireframeIndicesCount < wireframeIndicesCount) {
+			if (_wireframeIndices) {
+				free(_wireframeIndices);
+			}
+			_wireframeIndices = (typeof(_wireframeIndices))malloc(wireframeIndicesCount * sizeof(*_wireframeIndices));
+			_wireframeIndicesCount = wireframeIndicesCount;
+		}
+	}
+	if (vertexCount) {
+		if (!_vertices || _vertexCount < vertexCount) {
+			if (_vertices) {
+				free(_vertices);
+			}
+			_vertices = (typeof(_vertices))malloc(vertexCount * sizeof(*_vertices));
+			_vertexCount = vertexCount;
+		}
 	}
 }
 
 #pragma mark -
-#pragma mark Rendering
+#pragma mark Calculations
 
-- (void)renderWireframeModel:(const VisageSDK::FaceData &)faceData {
-	// check wireframe indices buffer
-//	_wireframeIndicesCount = faceData.faceModelTriangleCount * 6;	// 1 triangle => 3 lines (6 indices)
-//	if (!_wireframeIndices || _wireframeIndicesMaxCount < _wireframeIndicesCount) {
-//		// alloc or realloc memory if needed
-//		if (_wireframeIndices) {
-//			free(_wireframeIndices);
-//		}
-//		_wireframeIndices = (typeof(_wireframeIndices))malloc(_wireframeIndicesCount * sizeof(*_wireframeIndices));
-//		_wireframeIndicesMaxCount = _wireframeIndicesCount;
-//	}
-//
-//	// build wireframe model
-//	for (int i = 0; i < faceData.faceModelTriangleCount; ++i) {
-//		// 3 vertices for each triangle
-//		GLushort i0 = (GLushort)faceData.faceModelTriangles[3 * i];
-//		GLushort i1 = (GLushort)faceData.faceModelTriangles[3 * i + 1];
-//		GLushort i2 = (GLushort)faceData.faceModelTriangles[3 * i + 2];
-//
-//		// swap indices if needed
-//		if (i0 > i1) {
-//			swap(i0, i1);
-//		}
-//		if (i0 > i2) {
-//			swap(i0, i2);
-//		}
-//		if (i1 > i2) {
-//			swap(i1, i2);
-//		}
-//		GLushort lineIndices[] = { i0, i1, i1, i2, i0, i2 };
-//		// copy to the buffer for future use
-//		memcpy(&_wireframeIndices[6 * i], lineIndices, sizeof(lineIndices));
-//	}
-//
-//	// draw current wireframe model
-//	if (_wireframeIndicesCount) {
-//		glVertexAttribPointer(_attributeNormal, 3, GL_FLOAT, 0, 0, faceData.faceModelVertices); // fake normals
-//		glVertexAttribPointer(_attributePosition, 3, GL_FLOAT, 0, 0, faceData.faceModelVertices);
-//		glUniform4f(_uniformObjectColor, 0.0, 0.0, 1.0, 1.0);
-//		glDrawElements(GL_LINES, _wireframeIndicesCount, GL_UNSIGNED_SHORT, _wireframeIndices);
-//	}
+- (GLKMatrix4)viewMatrix {
+	return GLKMatrix4MakeLookAt(0, 0, 0, 0, 0, -1, 0, 1, 0);
 }
 
-- (void)renderFeaturePoints:(const VisageSDK::FaceData &)faceData {
-	// feature points
-	static FeaturePointId physicalcontourPointIds[] = { {15, 1}, {15, 3}, {15, 5}, {15, 7}, {15, 9}, {15, 11}, {15, 13}, {15, 15}, {15, 17},
-														{15, 16}, {15, 14}, {15, 12}, {15, 10}, {15, 8}, {15, 6}, {15, 4}, {15, 2} };
-	static FeaturePointId mouthInnerPointIds[] = { {2,	2}, {2,	6}, {2,	4}, {2,	8}, {2,	3}, {2,	9}, {2,	5}, {2,	7} };
-	static FeaturePointId mouthOuterPointIds[] = { {8,	1}, {8,	10}, {8, 5}, {8, 3}, {8, 7}, {8, 2}, {8, 8}, {8, 4}, {8, 6}, {8, 9} };
-	static FeaturePointId rightEyebrowPointIds[] = { {4, 6}, {14, 4}, {4, 4}, {14, 2}, {4, 2} };
-	static FeaturePointId rightEyePointIds[] = { {3, 12}, {12, 10}, {3, 2}, {12, 6}, {3, 8}, {12, 8}, {3, 4}, {12, 12} };
-	static FeaturePointId leftEyebrowPointIds[] = { {4, 1}, {14, 1}, {4, 3}, {14, 3}, {4, 5} };
-	static FeaturePointId leftEyePointIds[] = { {3, 11}, {12, 9}, {3, 1}, {12, 5}, {3, 7}, {12, 7}, {3, 3}, {12, 11} };
-	static FeaturePointId noseInnerPointIds[] = { {9, 1}, {9, 5}, {9, 15}, {9, 4}, {9, 2}, {9, 3} };
-	static FeaturePointId noseOuterPointIds[] = { {9, 6}, {9, 14}, {9, 2}, {9, 3},  {9, 1}, {9, 13}, {9, 7} };
-	
-	static GLKVector3 buffer[LENGTH(physicalcontourPointIds) +
-							 LENGTH(mouthInnerPointIds) + LENGTH(mouthOuterPointIds) +
-							 LENGTH(rightEyebrowPointIds) + LENGTH(rightEyePointIds) +
-							 LENGTH(leftEyebrowPointIds) + LENGTH(leftEyePointIds) +
-							 LENGTH(noseInnerPointIds) + LENGTH(noseOuterPointIds)] = {0};
-	
-	static FeaturePoints elements[] = {
-		FEATURE_POINTS(physicalcontourPointIds, NO),
-		FEATURE_POINTS(mouthInnerPointIds, YES), FEATURE_POINTS(mouthOuterPointIds, YES),
-		FEATURE_POINTS(rightEyebrowPointIds, YES), FEATURE_POINTS(rightEyePointIds, YES),
-		FEATURE_POINTS(leftEyebrowPointIds, YES), FEATURE_POINTS(leftEyePointIds, YES),
-		FEATURE_POINTS(noseInnerPointIds, YES), FEATURE_POINTS(noseOuterPointIds, NO),
-	};
-	
-	glVertexAttribPointer(_attributePosition, 3, GL_FLOAT, 0, 0, buffer);
-	glUniform4f(_uniformObjectColor, 0.0, 1.0, 0.0, 1.0);
-	VisageSDK::FDP *fdp = faceData.featurePoints3DRelative;
-	int offset = 0;
-	for (int n = 0; n < sizeof(elements) / sizeof(*elements); ++n) {
-		FeaturePoints &element = elements[n];
-		[self featurePoints:fdp ids:element.ids count:element.count buffer:buffer + offset];
-		glDrawArrays(element.closed ? GL_LINE_LOOP : GL_LINE_STRIP, offset, element.count);
-		glDrawArrays(GL_POINTS, offset, element.count);
-		offset += element.count;
+- (GLKMatrix4)projectionMatrix:(const VisageSDK::FaceData &)faceData {
+	// projection matrix
+	GLfloat x_offset = 1;
+	GLfloat y_offset = 1;
+	if (_imageWidth > _imageHeight) {
+		x_offset = ((GLfloat)_imageWidth) / ((GLfloat)_imageHeight);
+	}
+	else if (_imageWidth < _imageHeight) {
+		y_offset = ((GLfloat)_imageHeight) / ((GLfloat)_imageWidth);
+	}
+	// FOV in radians is: fov*0.5 = arctan ((top-bottom)*0.5 / near)
+	// In this case: FOV = 2 * arctan(frustum_y / frustum_near)
+	GLfloat frustum_near = 0.001f;
+	GLfloat frustum_far = 30; //hard to estimate face too far away
+	GLfloat frustum_x = x_offset * frustum_near / faceData.cameraFocus;
+	GLfloat frustum_y = y_offset * frustum_near / faceData.cameraFocus;
+	//GLKMatrix4 projectionMatrix = GLKMatrix4MakeFrustum(-frustum_x,frustum_x,-frustum_y,frustum_y,frustum_near,frustum_far);
+	GLKMatrix4 projectionMatrix = GLKMatrix4MakeFrustum(-frustum_x, frustum_x, frustum_y, -frustum_y,frustum_near,frustum_far); // show upside-down
+	return projectionMatrix;
+}
+
+- (GLKMatrix4)modelMatrix:(const VisageSDK::FaceData &)faceData {
+	// model matrix
+	const float *r = faceData.faceRotation;
+	const float *t = faceData.faceTranslation;
+	//because x and z axes in OpenGL are opposite from the ones used by visage
+	GLKMatrix4 modelMatrix = GLKMatrix4MakeTranslation(-t[0], t[1], -t[2]);
+	modelMatrix = GLKMatrix4RotateY(modelMatrix, r[1]);
+	modelMatrix = GLKMatrix4RotateX(modelMatrix, r[0]);
+	modelMatrix = GLKMatrix4RotateZ(modelMatrix, r[2]);
+	return modelMatrix;
+}
+
+- (void)buildVertices:(Vertex *)vertices from:(const VisageSDK::FaceData &)faceData {
+	// set initial values
+	for (int j = 0; j < faceData.faceModelVertexCount; ++j) {
+		Vertex &v = vertices[j];
+		v.position = GLKVector4MakeWithVector3(GLKVector3MakeWithArray(&faceData.faceModelVertices[j * 3]), 1.0);
+		v.normal = GLKVector4Make(0.0, 0.0, 0.0, 0.0);
+	}
+	// calculate normals
+	for (int j = 0; j < faceData.faceModelTriangleCount; ++j) {
+		Vertex &v0 = vertices[ faceData.faceModelTriangles[3 * j + 2] ];
+		Vertex &v1 = vertices[ faceData.faceModelTriangles[3 * j + 1] ];
+		Vertex &v2 = vertices[ faceData.faceModelTriangles[3 * j + 0] ];
+		GLKVector4 n = GLKVector4CrossProduct(GLKVector4Subtract(v1.position, v0.position), GLKVector4Subtract(v2.position, v0.position));
+		v0.normal = GLKVector4Add(v0.normal, n);
+		v1.normal = GLKVector4Add(v1.normal, n);
+		v2.normal = GLKVector4Add(v2.normal, n);
+	}
+	// normalize the normals
+	for (int j = 0; j < faceData.faceModelVertexCount; ++j) {
+		Vertex &v = vertices[j];
+		v.normal = GLKVector4Normalize(v.normal);
 	}
 }
 
-- (void)renderMeshModel:(const VisageSDK::FaceData &)faceData modelMatrix:(GLKMatrix4)modelMatrix {
-	// check normals buffer
-//	_normalsCount = faceData.faceModelVertexCount;
-//	if (!_normals || _normalssMaxCount < _normalsCount) {
-//		// alloc or realloc memory if needed
-//		if (_normals) {
-//			free(_wireframeIndices);
-//		}
-//		_normals = (typeof(_normals))malloc(_normalsCount * sizeof(*_normals));
-//		_normalssMaxCount = _normalsCount;
-//	}
-//
-//	// calculate normals
-//	memset(_normals, 0, _normalsCount * sizeof(*_normals));
-//	GLKVector3 *vertices = (GLKVector3 *)faceData.faceModelVertices;
-//	for (int i = 0; i < faceData.faceModelTriangleCount; ++i) {
-//		// 3 vertices for each triangle
-//		int index0 = faceData.faceModelTriangles[3 * i + 2];
-//		int index1 = faceData.faceModelTriangles[3 * i + 1];
-//		int index2 = faceData.faceModelTriangles[3 * i + 0];
-//		GLKVector3 &A = vertices[index0];
-//		GLKVector3 &B = vertices[index1];
-//		GLKVector3 &C = vertices[index2];
-//		GLKVector3 N = GLKVector3CrossProduct( GLKVector3Subtract(B, A), GLKVector3Subtract(C, A));
-//		_normals[index0] = GLKVector3Add(_normals[index0], N);
-//		_normals[index1] = GLKVector3Add(_normals[index1], N);
-//		_normals[index2] = GLKVector3Add(_normals[index2], N);
-//	}
-//	for (int i = 0; i < faceData.faceModelVertexCount; ++i) {
-//		bool b;
-//		_normals[i] = GLKVector3Normalize(GLKMatrix4MultiplyVector3(GLKMatrix4InvertAndTranspose(modelMatrix, &b), _normals[i]));
-//	}
-//	glUniform4f(_uniformObjectColor, 1.0, 0.5, 0.3, 1.0);
-//	glVertexAttribPointer(_attributeNormal, 3, GL_FLOAT, 0, 0, _normals);
-//	glVertexAttribPointer(_attributePosition, 3, GL_FLOAT, 0, 0, faceData.faceModelVertices);
-//	glDrawElements(GL_TRIANGLES, faceData.faceModelTriangleCount * 3, GL_UNSIGNED_INT, faceData.faceModelTriangles);
+- (void)buildWireframeIndices:(GLushort *)wireframeIndices from:(const VisageSDK::FaceData &)faceData {
+	// go through all triangles
+	for (int j = 0; j < faceData.faceModelTriangleCount; ++j) {
+		// 3 indices for each triangle
+		GLushort i0 = (GLushort)faceData.faceModelTriangles[3 * j + 2];
+		GLushort i1 = (GLushort)faceData.faceModelTriangles[3 * j + 1];
+		GLushort i2 = (GLushort)faceData.faceModelTriangles[3 * j + 0];
+		
+		// wireframe model
+		if (i0 > i1) {
+			swap(i0, i1);
+		}
+		if (i0 > i2) {
+			swap(i0, i2);
+		}
+		if (i1 > i2) {
+			swap(i1, i2);
+		}
+		GLushort lineIndices[] = { i0, i1, i1, i2, i0, i2 };
+		memcpy(&wireframeIndices[6 * j], lineIndices, sizeof(lineIndices));
+	}
 }
 
 #pragma mark -
@@ -499,184 +523,60 @@ struct Vertex {
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
 	
-	// allocate the buffers
-	GLint vertexCount = 0;
-	GLint triangleCount = 0;
-	for (int i = 0; i < MAXIMUM_NUMBER_OF_FACES; ++i) {
-		if (_trackerStatus[i] == TRACK_STAT_OK) {
-			VisageSDK::FaceData &faceData = _faceData[i];
-			vertexCount += faceData.faceModelVertexCount;
-			triangleCount += faceData.faceModelTriangleCount;
-		}
-	}
-	
-	if (triangleCount) {
-		// 1 triangle => 3 lines (6 indices)
-		GLint wireframeIndicesCount = triangleCount * 6;
-		if (!_wireframeIndices || _wireframeIndicesCount < wireframeIndicesCount) {
-			if (_wireframeIndices) {
-				free(_wireframeIndices);
-			}
-			_wireframeIndices = (typeof(_wireframeIndices))malloc(wireframeIndicesCount * sizeof(*_wireframeIndices));
-			_wireframeIndicesCount = wireframeIndicesCount;
-		}
-		
-		// 1 triangle => 3 vertices (3 indices)
-//		GLint meshIndicesCount = triangleCount * 3;
-//		if (!_meshIndices || _meshIndicesCount < meshIndicesCount) {
-//			if (_meshIndices) {
-//				free(_meshIndices);
-//			}
-//			_meshIndices = (typeof(_meshIndices))malloc(meshIndicesCount * sizeof(*_meshIndices));
-//			_meshIndicesCount = meshIndicesCount;
-//		}
-	}
-	
-	if (vertexCount) {
-		if (!_vertices || _vertexCount < vertexCount) {
-			if (_vertices) {
-				free(_vertices);
-			}
-			_vertices = (typeof(_vertices))malloc(vertexCount * sizeof(*_vertices));
-			_vertexCount = vertexCount;
-		}
-	}
-	
-	// init the buffers
+	// go through all detected faces
 	GLint verticesOffset = 0;
 	GLint wireframeIndicesOffset = 0;
-	for (int i = 0; i < MAXIMUM_NUMBER_OF_FACES; ++i) {
-		if (_trackerStatus[i] == TRACK_STAT_OK) {
-			Vertex *vertices = _vertices + verticesOffset;
-			GLushort *wireframeIndices = _wireframeIndices + wireframeIndicesOffset;
-			
-			VisageSDK::FaceData &faceData = _faceData[i];
-			
-			// init vertex buffer
-			for (int j = 0; j < faceData.faceModelVertexCount; ++j) {
-				Vertex &v = vertices[j];
-				v.position = GLKVector4MakeWithVector3(GLKVector3MakeWithArray(&faceData.faceModelVertices[j * 3]), 1.0);
-				v.normal = GLKVector4Make(0.0, 0.0, 0.0, 0.0);
-			}
-			
-			for (int j = 0; j < faceData.faceModelTriangleCount; ++j) {
-				// calculate normals
-				Vertex &v0 = vertices[ faceData.faceModelTriangles[3 * j + 2] ];
-				Vertex &v1 = vertices[ faceData.faceModelTriangles[3 * j + 1] ];
-				Vertex &v2 = vertices[ faceData.faceModelTriangles[3 * j + 0] ];
-				GLKVector4 n = GLKVector4CrossProduct(GLKVector4Subtract(v1.position, v0.position), GLKVector4Subtract(v2.position, v0.position));
-				v0.normal = GLKVector4Add(v0.normal, n);
-				v1.normal = GLKVector4Add(v1.normal, n);
-				v2.normal = GLKVector4Add(v2.normal, n);
-				
-				// ...
-				
-				
-				
-				// 3 vertices for each triangle
-				GLushort i0 = (GLushort)faceData.faceModelTriangles[3 * j];
-				GLushort i1 = (GLushort)faceData.faceModelTriangles[3 * j + 1];
-				GLushort i2 = (GLushort)faceData.faceModelTriangles[3 * j + 2];
-				
-				// swap indices if needed
-				if (i0 > i1) {
-					swap(i0, i1);
-				}
-				if (i0 > i2) {
-					swap(i0, i2);
-				}
-				if (i1 > i2) {
-					swap(i1, i2);
-				}
-				GLushort lineIndices[] = { i0, i1, i1, i2, i0, i2 };
-				// copy to the buffer for future use
-				memcpy(&wireframeIndices[6 * j], lineIndices, sizeof(lineIndices));
-
-				
-				
-				
-			}
-			
-			for (int j = 0; j < faceData.faceModelVertexCount; ++j) {
-				Vertex &v = vertices[j];
-				v.normal = GLKVector4Normalize(v.normal);
-			}
-			
-			verticesOffset += faceData.faceModelVertexCount;
-			wireframeIndicesOffset += faceData.faceModelTriangleCount * 6;
-		}
-	}
-	
-	if (vertexCount) {
-		glVertexAttribPointer(_attributePosition, 4, GL_FLOAT, GL_FALSE, sizeof(*_vertices), &_vertices[0].position);
-		glVertexAttribPointer(_attributeNormal, 4, GL_FLOAT, GL_FALSE, sizeof(*_vertices), &_vertices[0].normal);
-	}
-	
-	// draw faces
 	for (int i = 0; i < MAXIMUM_NUMBER_OF_FACES; ++i) {
 		// check status
 		if (_trackerStatus[i] == TRACK_STAT_OK) {
 			VisageSDK::FaceData &faceData = _faceData[i];
+			Vertex *vertices = _vertices + verticesOffset;
+			GLushort *wireframeIndices = _wireframeIndices + wireframeIndicesOffset;
+			[self buildVertices:vertices from:faceData];
+			[self buildWireframeIndices:wireframeIndices from:faceData];
 			
-			// common parameters
+			// shaders parameters
+			glVertexAttribPointer(_attributePosition, 4, GL_FLOAT, GL_FALSE, sizeof(*vertices), &vertices[0].position);
+			glVertexAttribPointer(_attributeNormal, 4, GL_FLOAT, GL_FALSE, sizeof(*vertices), &vertices[0].normal);
 			glUniform4f(_uniformObjectColor, 1.0, 0.5, 0.3, 1.0);
-			//glUniform4f(_uniformObjectColor, 0.0, 0.0, 0.0, 1.0);
 			glUniform4f(_uniformLightColor, 1.0, 1.0, 1.0, 1.0);
 			glUniform4f(_uniformViewPosition, 0.0, 0.0, 0.0, 1.0);
 			glUniform4f(_uniformLightPosition, 0.0, 0.15, 0.5, 1.0);
-			
-			// model matrix
-			const float *r = faceData.faceRotation;
-			const float *t = faceData.faceTranslation;
-			//because x and z axes in OpenGL are opposite from the ones used by visage
-			GLKMatrix4 modelMatrix = GLKMatrix4MakeTranslation(-t[0], t[1], -t[2]);
-			modelMatrix = GLKMatrix4RotateY(modelMatrix, r[1]);
-			modelMatrix = GLKMatrix4RotateX(modelMatrix, r[0]);
-			modelMatrix = GLKMatrix4RotateZ(modelMatrix, r[2]);
-			glUniformMatrix4fv(_uniformModelMatrix, 1, 0, modelMatrix.m);
-			
-			// view matrix
-			GLKMatrix4 viewMatrix = GLKMatrix4MakeLookAt(0, 0, 0, 0, 0, -1, 0, 1, 0);
-			glUniformMatrix4fv(_uniformViewMatrix, 1, 0, viewMatrix.m);
-			
-			// projection matrix
-			GLfloat x_offset = 1;
-			GLfloat y_offset = 1;
-			if (_imageWidth > _imageHeight) {
-				x_offset = ((GLfloat)_imageWidth) / ((GLfloat)_imageHeight);
-			}
-			else if (_imageWidth < _imageHeight) {
-				y_offset = ((GLfloat)_imageHeight) / ((GLfloat)_imageWidth);
-			}
-			// FOV in radians is: fov*0.5 = arctan ((top-bottom)*0.5 / near)
-			// In this case: FOV = 2 * arctan(frustum_y / frustum_near)
-			GLfloat frustum_near = 0.001f;
-			GLfloat frustum_far = 30; //hard to estimate face too far away
-			GLfloat frustum_x = x_offset * frustum_near / faceData.cameraFocus;
-			GLfloat frustum_y = y_offset * frustum_near / faceData.cameraFocus;
-			//GLKMatrix4 projectionMatrix = GLKMatrix4MakeFrustum(-frustum_x,frustum_x,-frustum_y,frustum_y,frustum_near,frustum_far);
-			GLKMatrix4 projectionMatrix = GLKMatrix4MakeFrustum(-frustum_x, frustum_x, frustum_y, -frustum_y,frustum_near,frustum_far); // show upside-down
-			glUniformMatrix4fv(_uniformProjectionMatrix, 1, 0, projectionMatrix.m);
+			glUniformMatrix4fv(_uniformModelMatrix, 1, 0, [self modelMatrix:faceData].m);
+			glUniformMatrix4fv(_uniformViewMatrix, 1, 0, [self viewMatrix].m);
+			glUniformMatrix4fv(_uniformProjectionMatrix, 1, 0, [self projectionMatrix:faceData].m);
 			
 			// rendering depends on current view mode
-			switch (_mode) {
-				case VisageFilterViewModeFeaturePoints:
-					[self renderFeaturePoints:faceData];
-					break;
-					
-				case VisageFilterViewModeWireframe:
-					glUniform4f(_uniformObjectColor, 0.0, 0.0, 1.0, 1.0);
-					glDrawElements(GL_LINES, faceData.faceModelTriangleCount * 6, GL_UNSIGNED_SHORT, _wireframeIndices);
-					break;
-					
-				case VisageFilterViewModeMesh:
-					glDrawElements(GL_TRIANGLES, faceData.faceModelTriangleCount * 3, GL_UNSIGNED_INT, faceData.faceModelTriangles);
-					break;
-					
-				default:
-					NSAssert(NO, @"Unknown view mode.");
-					break;
+			if (_mode == VisageFilterViewModeFeaturePoints) {
+				// feature points
+				glVertexAttribPointer(_attributePosition, 4, GL_FLOAT, 0, 0, _featurePoints);
+				glUniform4f(_uniformObjectColor, 0.0, 1.0, 0.0, 1.0);
+				VisageSDK::FDP *fdp = faceData.featurePoints3DRelative;
+				int offset = 0;
+				for (int n = 0; n < sizeof(featurePointsElements) / sizeof(*featurePointsElements); ++n) {
+					FeaturePoints &element = featurePointsElements[n];
+					[self featurePoints:fdp ids:element.ids count:element.count buffer:_featurePoints + offset];
+					glDrawArrays(GL_LINE_STRIP, offset, element.count);
+					offset += element.count;
+				}
+				glDrawArrays(GL_POINTS, 0, offset);
 			}
+			else if (_mode == VisageFilterViewModeWireframe) {
+				// wireframe
+				glUniform4f(_uniformObjectColor, 0.0, 0.0, 1.0, 1.0);
+				glDrawElements(GL_LINES, faceData.faceModelTriangleCount * 6, GL_UNSIGNED_SHORT, _wireframeIndices);
+			}
+			else if (_mode == VisageFilterViewModeMesh) {
+				// 3d mesh
+				glDrawElements(GL_TRIANGLES, faceData.faceModelTriangleCount * 3, GL_UNSIGNED_INT, faceData.faceModelTriangles);
+			}
+			else {
+				NSAssert(NO, @"Unknown view mode.");
+			}
+			
+			// move to the next face data
+			verticesOffset += faceData.faceModelVertexCount;
+			wireframeIndicesOffset += faceData.faceModelTriangleCount * 6;
 		}
 	}
 	

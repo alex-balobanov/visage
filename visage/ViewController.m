@@ -34,6 +34,7 @@
 	
 	// filter
 	self.filter = [[VisageFilter alloc] init];
+	self.filter.mode = VisageFilterViewModeMesh;
 	
 	// processing chain
 	[self.camera addTarget:self.filter];
@@ -61,7 +62,7 @@
 #pragma mark Actions
 
 - (IBAction)changeViewButtonPressed:(id)sender {
-	static VisageFilterViewMode modes[] = { VisageFilterViewModeFeaturePoints, VisageFilterViewModeWireframe, VisageFilterViewModeMesh };
+	static VisageFilterViewMode modes[] = { VisageFilterViewModeMesh, VisageFilterViewModeWireframe, VisageFilterViewModeFeaturePoints };
 	static NSUInteger index = 0;
 	self.filter.mode = modes[++index % (sizeof(modes)/sizeof(*modes))];
 }
